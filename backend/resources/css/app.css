@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-neon-bg text-gray-200 antialiased selection:bg-neon-pink selection:text-white;
+        background-image:
+            linear-gradient(rgba(46, 249, 182, 0.02) 1px, transparent 1px),
+            linear-gradient(
+                90deg,
+                rgba(46, 249, 182, 0.02) 1px,
+                transparent 1px
+            );
+        background-size: 40px 40px;
+    }
+
+    /* Custom scrollbar for a cleaner HUD feel */
+    ::-webkit-scrollbar {
+        width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+        @apply bg-neon-bg;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply bg-neon-purple/20 hover:bg-neon-cyan/50;
+    }
+}

@@ -82,6 +82,21 @@ services:
     networks:
       - mercado-network
 
+  # 6. Frontend Asset Compiler (Vite/Node)
+  vite:
+    image: node:20-alpine
+    user: "${PUID:-1000}:${PGID:-1000}"
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html:z
+    ports:
+      - "5173:5173" # Expose Vite's HMR port
+    # Keeps the container alive so can exec into it, 
+    # or can change this to "npm run dev" later.
+    command: tail -f /dev/null 
+    networks:
+      - mercado-network
+
 networks:
   mercado-network:
     driver: bridge
