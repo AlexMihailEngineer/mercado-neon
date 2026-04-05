@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # 1. Web Server (Nginx)
+  web:
+    image: nginx:alpine
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/html:z
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - mercado-network
+
+  # 2. Laravel Application (PHP-FPM)
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        PUID: ${PUID:-1000}
+        PGID: ${PGID:-1000}
+    volumes:
+      - ./backend:/var/www/html:z
+    env_file:
+      - ./backend/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      efactura-node:
+        condition: service_healthy
+    networks:
+      - mercado-network
+
+  # 3. ANAF UBL Microservice (Node.js)
+  efactura-node:
+    build:
+      context: ./efactura-microservice
+      dockerfile: Dockerfile
+    # No ports exposed to host, purely internal communication
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    networks:
+      - mercado-network
+    restart: unless-stopped
+
+  # 4. Database (MySQL 8)
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3307:3306"
+    env_file:
+      - ./.env.docker
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - db-data:/var/lib/mysql:z
+    networks:
+      - mercado-network
+
+  # 5. Redis (For Laravel Queues / Scheduled Tasks)
+  redis:
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - redis-data:/data:z
+    networks:
+      - mercado-network
+
+networks:
+  mercado-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  redis-data:

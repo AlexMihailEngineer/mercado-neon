@@ -1,0 +1,55 @@
+# ==========================================
+# System & Editor (VS Code / Linux / Mac)
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.log
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+# NEVER commit your ANAF keys or DB passwords!
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# ==========================================
+# Laravel Backend (/backend)
+# ==========================================
+/backend/vendor/
+/backend/node_modules/
+/backend/public/build
+/backend/public/hot
+/backend/public/storage
+/backend/storage/*.key
+/backend/storage/framework/cache/data/
+/backend/storage/framework/sessions/
+/backend/storage/framework/testing/
+/backend/storage/framework/views/
+/backend/storage/logs/
+/backend/storage/app/public/
+/backend/.phpunit.cache
+/backend/Homestead.json
+/backend/Homestead.yaml
+
+# ==========================================
+# ANAF UBL Microservice (/efactura-microservice)
+# ==========================================
+/efactura-microservice/node_modules/
+/efactura-microservice/dist/
+/efactura-microservice/npm-debug.log*
+/efactura-microservice/yarn-debug.log*
+/efactura-microservice/yarn-error.log*
+/efactura-microservice/.tsbuildinfo
+
+# ==========================================
+# Local Docker Data (If mapped to host)
+# ==========================================
+# We use named volumes (db-data), but if you ever bind-mount them locally, 
+# you don't want to push a 500MB MySQL database to GitHub.
+/docker/mysql-data/
+/docker/redis-data/
