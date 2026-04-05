@@ -1,4 +1,3 @@
-import defaultTheme from "tailwindcss/defaultTheme";
 import forms from "@tailwindcss/forms";
 import flowbitePlugin from "flowbite/plugin";
 
@@ -10,15 +9,32 @@ export default {
         "./storage/framework/views/*.php",
         "./resources/views/**/*.blade.php",
         "./resources/js/**/*.vue",
-        "node_modules/flowbite-vue/**/*.{js,jsx,ts,tsx,vue}",
-        "node_modules/flowbite/**/*.js",
+        "./node_modules/flowbite-vue/**/*.{js,jsx,ts,tsx,vue}",
+        "./node_modules/flowbite/**/*.js",
     ],
 
     theme: {
         extend: {
             fontFamily: {
-                sans: ["Inter", ...defaultTheme.fontFamily.sans],
-                mono: ["Fira Code", ...defaultTheme.fontFamily.mono],
+                sans: [
+                    "Inter",
+                    "ui-sans-serif",
+                    "system-ui",
+                    "sans-serif",
+                    "Apple Color Emoji",
+                    "Segoe UI Emoji",
+                ],
+                mono: [
+                    "Fira Code",
+                    "ui-monospace",
+                    "SFMono-Regular",
+                    "Menlo",
+                    "Monaco",
+                    "Consolas",
+                    "Liberation Mono",
+                    "Courier New",
+                    "monospace",
+                ],
             },
             colors: {
                 // Cyberpunk "Holo Noir" Palette
