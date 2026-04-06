@@ -48,7 +48,6 @@ services:
       start_period: 10s
     networks:
       - mercado-network
-    restart: unless-stopped
 
   # 4. Database (MySQL 8)
   db:

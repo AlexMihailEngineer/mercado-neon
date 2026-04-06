@@ -1,0 +1,58 @@
+# VCS
+.git
+.gitignore
+
+# IDE / OS
+.idea
+.vscode
+*.swp
+.DS_Store
+
+# Env / secrets
+.env
+.env.*
+backend/.env
+backend/.env.*
+
+# PHP / Laravel
+backend/vendor
+backend/storage
+backend/bootstrap/cache
+backend/.phpunit.result.cache
+backend/.pest.cache
+backend/.php-cs-fixer.cache
+
+# Node / Vite (Laravel frontend)
+backend/node_modules
+backend/npm-debug.log*
+backend/yarn-debug.log*
+backend/yarn-error.log*
+backend/pnpm-debug.log*
+backend/.npm
+backend/.yarn
+backend/.pnpm-store
+backend/.vite
+backend/public/build
+
+# Node microservice
+efactura-microservice/node_modules
+efactura-microservice/npm-debug.log*
+efactura-microservice/yarn-debug.log*
+efactura-microservice/yarn-error.log*
+efactura-microservice/pnpm-debug.log*
+efactura-microservice/.npm
+efactura-microservice/.yarn
+efactura-microservice/.pnpm-store
+
+# Logs / coverage
+**/logs
+**/*.log
+coverage
+**/coverage
+
+# Tests / caches
+**/.cache
+**/.pytest_cache
+
+# Docker artifacts
+**/*.pid

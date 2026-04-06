@@ -1,6 +1,5 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
-// Do NOT import AppLayout here
 </script>
 
 <template>
