@@ -17,7 +17,7 @@ class RagMatchingService
             // STEP 1: Vectorize the User's Query
             // We use nomic-embed-text to turn "A fast laptop for a cyberpunk hacker" into math.
             $embeddingResponse = Http::timeout(15)->post('http://ollama:11434/api/embeddings', [
-                'model'  => 'nomic-embed-text',
+                'model' => 'nomic-embed-text',
                 'prompt' => $userQuery,
             ]);
 
@@ -31,7 +31,7 @@ class RagMatchingService
             // Find the 3 closest mathematical matches to our query vector.
             $faissResponse = Http::timeout(5)->post('http://vector-engine:8000/search', [
                 'vector' => $queryVector,
-                'top_k'  => 3,
+                'top_k' => 3,
             ]);
 
             if ($faissResponse->failed()) {
@@ -47,6 +47,10 @@ class RagMatchingService
             // Extract the IDs and maintain the exact order returned by FAISS (closest first)
             $productIds = collect($matches)->pluck('product_id')->toArray();
 
+            if (empty($productIds)) {
+                return ['products' => [], 'synthesis' => 'No suitable hardware found in the database.'];
+            }
+
             // STEP 3: Retrieve full Product details from MySQL
             // The FIELD() function ensures MySQL doesn't reorder our perfectly ranked AI results
             $products = Product::whereIn('id', $productIds)
@@ -57,7 +61,7 @@ class RagMatchingService
             $synthesis = $this->synthesizeRecommendation($userQuery, $products);
 
             return [
-                'products'  => $products,
+                'products' => $products,
                 'synthesis' => $synthesis,
             ];
         } catch (\Throwable $e) {
@@ -78,26 +82,47 @@ class RagMatchingService
 
         // The Prompt Engineering: Giving the AI a persona and strict rules
         $systemPrompt = "You are an underground tech broker in a cyberpunk market. A client asked you for: '{$query}'. " .
-            "Based ONLY on the following available inventory, write a brief, edgy, 2-sentence sales pitch " .
+            'Based ONLY on the following available inventory, write a brief, edgy, 2-sentence sales pitch ' .
             "explaining why these specific items are what they need. Do not invent items.\n\n" .
             "Inventory:\n" . $context;
 
         try {
             // We use the /api/generate endpoint for standard text completion
             $llmResponse = Http::timeout(45)->post('http://ollama:11434/api/generate', [
-                'model'   => 'qwen2:0.5b',
-                'prompt'  => $systemPrompt,
-                'stream'  => false, // Set to true later if you want typewriter effects in Vue
+                'model' => 'qwen2:0.5b',
+                'prompt' => $systemPrompt,
+                'stream' => false, // Set to true later if you want typewriter effects in Vue
                 'options' => [
                     'temperature' => 0.7, // A bit of creativity for the cyberpunk vibe
                     'num_predict' => 60, // Keep it short so it doesn't crush your 4GB VRAM
-                    'keep_alive' => '1h', // Keep the model in memory for an hour
-                ]
+                    'keep_alive' => -1, // Keep the model in memory indefinitely
+                ],
             ]);
 
-            return $llmResponse->json('response') ?? 'Here is the hardware you requested. No questions asked.';
+            if ($llmResponse->failed()) {
+                Log::warning('LLM Synthesis failed.', [
+                    'status' => $llmResponse->status(),
+                    'body' => $llmResponse->body(),
+                ]);
+
+                return 'Here is the hardware you requested. No questions asked.';
+            }
+
+            $responseText = $llmResponse->json('response');
+
+            if (! is_string($responseText) || trim($responseText) === '') {
+                Log::warning('LLM Synthesis returned an unexpected payload.', [
+                    'status' => $llmResponse->status(),
+                    'body' => $llmResponse->body(),
+                ]);
+
+                return 'Here is the hardware you requested. No questions asked.';
+            }
+
+            return $responseText;
         } catch (\Exception $e) {
             Log::warning('LLM Synthesis timed out or failed. Falling back to default message.');
+
             return 'Here is the hardware you requested. Secure connection established.';
         }
     }

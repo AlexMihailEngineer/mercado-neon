@@ -113,10 +113,16 @@ services:
 
   # 8. Ollama (LLM & Embeddings Server)
   ollama:
-    image: ollama/ollama:latest
+    # Use the standard latest image (it has Vulkan support built-in)
+    image: ollama/ollama:latest 
+    privileged: true
     environment:
-      - OLLAMA_KEEP_ALIVE=-1 # Keep models in memory indefinitely
-      - OLLAMA_NUM_PARALLEL=2 # Allow embedding and synthesis models to run together
+      - OLLAMA_KEEP_ALIVE=-1
+      - OLLAMA_NUM_PARALLEL=2
+      # Force Ollama to use the Vulkan backend instead of ROCm
+      - OLLAMA_VULKAN=1 
+    devices:
+      - "/dev/dri:/dev/dri" # Vulkan uses the Direct Rendering Infrastructure
     volumes:
       - ollama-data:/root/.ollama:z
     networks:
