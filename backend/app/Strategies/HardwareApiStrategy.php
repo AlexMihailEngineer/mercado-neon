@@ -7,7 +7,13 @@ use Illuminate\Support\Facades\Http;
 
 class HardwareApiStrategy implements DataIngestionStrategy
 {
-    protected array $categories = ['laptops', 'smartphones'];
+    protected array $categories = [
+        'laptops',
+        'smartphones',
+        'tablets',
+        'mobile-accessories',
+        'mens-watches'
+    ];
 
     public function fetch(): array
     {
