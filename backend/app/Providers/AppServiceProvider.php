@@ -12,7 +12,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\Typesense\Client::class, function () {
+            return new \Typesense\Client([
+                'nodes' => [
+                    [
+                        'host'     => env('TYPESENSE_HOST', 'localhost'),
+                        'port'     => env('TYPESENSE_PORT', '8108'),
+                        'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+                    ],
+                ],
+                'api_key' => env('TYPESENSE_API_KEY'),
+                'connection_timeout_seconds' => 2,
+            ]);
+        });
     }
 
     /**

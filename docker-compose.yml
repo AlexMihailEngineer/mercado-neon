@@ -20,6 +20,7 @@ services:
       args:
         PUID: ${PUID:-1000}
         PGID: ${PGID:-1000}
+    user: "${PUID:-1000}:${PGID:-1000}"
     volumes:
       - ./backend:/var/www/html:z
     env_file:
@@ -95,6 +96,21 @@ services:
     networks:
       - mercado-network
 
+  # 7. Typesense (Fast Search Engine)
+  typesense:
+    image: typesense/typesense:26.0
+    ports:
+      - "8108:8108"
+    volumes:
+      - typesense-data:/data:z
+    env_file:
+      - ./.env.docker 
+    # We remove the flags from 'command' because Typesense reads 
+    # TYPESENSE_API_KEY and TYPESENSE_DATA_DIR directly from the env_file.
+    command: '--enable-cors=true' 
+    networks:
+      - mercado-network
+
 networks:
   mercado-network:
     driver: bridge
@@ -102,3 +118,4 @@ networks:
 volumes:
   db-data:
   redis-data:
+  typesense-data:
