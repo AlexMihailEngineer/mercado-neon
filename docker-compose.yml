@@ -111,6 +111,32 @@ services:
     networks:
       - mercado-network
 
+  # 8. Ollama (LLM & Embeddings Server)
+  ollama:
+    image: ollama/ollama:latest
+    environment:
+      - OLLAMA_KEEP_ALIVE=-1 # Keep models in memory indefinitely
+      - OLLAMA_NUM_PARALLEL=2 # Allow embedding and synthesis models to run together
+    volumes:
+      - ollama-data:/root/.ollama:z
+    networks:
+      - mercado-network
+
+  # 9. Vector Engine (Python + FAISS + FastAPI)
+  vector-engine:
+    build:
+      context: ./vector-engine
+      dockerfile: Dockerfile
+    volumes:
+      - ./vector-engine:/app:z
+      - vector-data:/app/data:z
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
+    networks:
+      - mercado-network
+
 networks:
   mercado-network:
     driver: bridge
@@ -119,3 +145,5 @@ volumes:
   db-data:
   redis-data:
   typesense-data:
+  ollama-data:
+  vector-data:

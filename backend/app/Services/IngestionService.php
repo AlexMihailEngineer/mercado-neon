@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\DataIngestionStrategy;
 use App\Models\Product;
+use App\Jobs\GenerateProductEmbedding;
 use Illuminate\Support\Facades\Log;
 
 class IngestionService
@@ -18,7 +19,7 @@ class IngestionService
 
             foreach ($items as $item) {
                 // updateOrCreate ensures we don't duplicate products on multiple runs
-                Product::updateOrCreate(
+                $product = Product::updateOrCreate(
                     ['external_id' => $item['external_id']],
                     [
                         'title'       => $item['title'],
@@ -29,6 +30,11 @@ class IngestionService
                         'image_url'   => $item['image_url'],
                     ]
                 );
+
+                // Dispatch the embedding job to the background queue
+                if ($product->wasRecentlyCreated || $product->wasChanged(['title', 'description', 'category'])) {
+                    GenerateProductEmbedding::dispatch($product);
+                }
             }
 
             Log::info('Ingestion complete. Processed ' . count($items) . ' items.');
