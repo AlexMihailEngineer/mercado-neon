@@ -31,9 +31,11 @@ class IngestionService
                 );
             }
 
-            Log::info("Ingestion complete. Processed " . count($items) . " items.");
-        } catch (\Exception $e) {
-            Log::error("Ingestion Service Error: " . $e->getMessage());
+            Log::info('Ingestion complete. Processed ' . count($items) . ' items.');
+        } catch (\Throwable $e) {
+            Log::error('Ingestion Service Error: ' . $e->getMessage());
+
+            throw $e;
         }
     }
 }

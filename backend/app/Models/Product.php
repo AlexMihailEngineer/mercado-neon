@@ -43,7 +43,7 @@ class Product extends Model
             'category'    => (string) $this->category,
             'image_url'   => (string) $this->image_url,
             // Convert timestamps to Unix epochs for easier temporal querying in Typesense
-            'created_at'  => $this->created_at->timestamp,
+            'created_at'  => $this->created_at?->timestamp ?? 0,
         ];
     }
 }
