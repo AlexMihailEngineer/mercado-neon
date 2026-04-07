@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -41,14 +42,22 @@ Route::get('/payment/success', function (Request $request) {
     $sessionId = $request->query('session_id');
 
     if (!$sessionId) {
-        return redirect()->route('dashboard')->with('error', 'No session ID provided.');
+        if (Auth::check()) {
+            return redirect()->route('dashboard')->with('error', 'No session ID provided.');
+        }
+
+        return redirect('/')->with('error', 'No session ID provided.');
     }
 
     $order = Order::where('stripe_session_id', $sessionId)->first();
 
     // If order is not found, redirect to dashboard with a warning
     if (!$order) {
-        return redirect()->route('dashboard')->with('error', 'Transaction record not found.');
+        if (Auth::check()) {
+            return redirect()->route('dashboard')->with('error', 'Transaction record not found.');
+        }
+
+        return redirect('/')->with('error', 'Transaction record not found.');
     }
 
     return Inertia::render('Checkout/Success', [
@@ -57,7 +66,11 @@ Route::get('/payment/success', function (Request $request) {
 })->name('payment.success');
 
 Route::get('/payment/cancel', function () {
-    return Inertia::render('Checkout/Cancel');
+    if (Auth::check()) {
+        return redirect()->route('dashboard')->with('error', 'Payment cancelled.');
+    }
+
+    return redirect('/')->with('error', 'Payment cancelled.');
 })->name('payment.cancel');
 
 require __DIR__ . '/auth.php';
