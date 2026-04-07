@@ -61,6 +61,7 @@ class Product extends Model
                 ['name' => 'description', 'type' => 'string'],
                 ['name' => 'price', 'type' => 'float'],
                 ['name' => 'category', 'type' => 'string', 'facet' => true], // 'facet' allows filtering by category
+                ['name' => 'image_url', 'type' => 'string', 'index' => false, 'optional' => true],
                 ['name' => 'created_at', 'type' => 'int64'],
             ],
             'default_sorting_field' => 'created_at',

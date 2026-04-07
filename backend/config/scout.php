@@ -210,26 +210,7 @@ return [
         |--------------------------------------------------------------------------
         | Define the schema for your collections here.
         */
-        'index-settings' => [
-            \App\Models\Product::class => [
-                'collection-schema' => [
-                    'fields' => [
-                        ['name' => 'id', 'type' => 'string'],
-                        ['name' => 'external_id', 'type' => 'string'],
-                        ['name' => 'title', 'type' => 'string'],
-                        ['name' => 'description', 'type' => 'string'],
-                        ['name' => 'price', 'type' => 'float'],
-                        ['name' => 'category', 'type' => 'string', 'facet' => true],
-                        ['name' => 'image_url', 'type' => 'string', 'index' => false, 'optional' => true],
-                        ['name' => 'created_at', 'type' => 'int64'],
-                    ],
-                    'default_sorting_field' => 'created_at',
-                ],
-                'search-parameters' => [
-                    'query_by' => 'title,description,category',
-                ],
-            ],
-        ],
+        'index-settings' => [],
         'import_action' => env('TYPESENSE_IMPORT_ACTION', 'upsert'),
 
     ],
