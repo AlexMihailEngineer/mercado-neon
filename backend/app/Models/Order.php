@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Order extends Model
 {
@@ -19,7 +18,7 @@ class Order extends Model
      * Data Casting
      */
     protected $casts = [
-        'total_amount_ron' => 'float',
+        'total_amount_ron' => 'decimal:2',
     ];
 
     /**
@@ -28,7 +27,15 @@ class Order extends Model
      */
     public function getTotalAmountEurAttribute(): float
     {
-        // Using the 5.00 RON/EUR rate
-        return round($this->total_amount_ron / 5.00, 2);
+        $ronNormalized = number_format((float) $this->total_amount_ron, 2, '.', '');
+        $ronCents = (int) str_replace('.', '', $ronNormalized);
+        $eurCents = intdiv($ronCents, 5);
+        $remainder = $ronCents % 5;
+
+        if ($remainder >= 3) {
+            $eurCents++;
+        }
+
+        return $eurCents / 100;
     }
 }

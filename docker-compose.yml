@@ -145,8 +145,7 @@ services:
   stripe-cli:
     image: stripe/stripe-cli:latest
     container_name: mercado_stripe_cli
-    # Replace 'nginx' with the actual name of your Nginx or App service in docker-compose
-    command: listen --forward-to http://nginx/api/webhooks/stripe
+    command: listen --forward-to http://web/api/webhooks/stripe
     env_file:
       - ./.env
     environment:

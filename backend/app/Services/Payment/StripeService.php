@@ -4,7 +4,6 @@ namespace App\Services\Payment;
 
 use Stripe\StripeClient;
 use App\Models\Order;
-use Exception;
 
 class StripeService
 {
@@ -20,8 +19,14 @@ class StripeService
      */
     public function createCheckoutSession(Order $order): string
     {
-        // Stripe expects cents. Use the model's EUR attribute.
-        $amountInCents = (int) round($order->total_amount_eur * 100);
+        $ronNormalized = number_format((float) $order->total_amount_ron, 2, '.', '');
+        $ronCents = (int) str_replace('.', '', $ronNormalized);
+        $amountInCents = intdiv($ronCents, 5);
+        $remainder = $ronCents % 5;
+
+        if ($remainder >= 3) {
+            $amountInCents++;
+        }
 
         $session = $this->stripe->checkout->sessions->create([
             'line_items' => [[
@@ -46,15 +51,5 @@ class StripeService
         $order->update(['stripe_session_id' => $session->id]);
 
         return $session->url;
-    }
-
-    /**
-     * Convert RON to EUR based on a defined exchange rate.
-     */
-    private function convertToEur(float $ronAmount): float
-    {
-        // Example rate: 1 EUR = 5.00 RON
-        $exchangeRate = 5.00;
-        return round($ronAmount / $exchangeRate, 2);
     }
 }
