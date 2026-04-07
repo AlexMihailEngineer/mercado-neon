@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/scout": "^11.1",
         "laravel/tinker": "^3.0",
+        "stripe/stripe-php": "^20.0",
         "tightenco/ziggy": "^2.0",
         "typesense/typesense-php": "^6.0"
     },

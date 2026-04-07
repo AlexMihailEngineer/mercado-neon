@@ -57,7 +57,7 @@ services:
     ports:
       - "3307:3306"
     env_file:
-      - ./.env.docker
+      - ./.env
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
@@ -104,7 +104,7 @@ services:
     volumes:
       - typesense-data:/data:z
     env_file:
-      - ./.env.docker 
+      - ./.env
     # We remove the flags from 'command' because Typesense reads 
     # TYPESENSE_API_KEY and TYPESENSE_DATA_DIR directly from the env_file.
     command: '--enable-cors=true' 
@@ -142,7 +142,19 @@ services:
       - ollama
     networks:
       - mercado-network
-
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    container_name: mercado_stripe_cli
+    # Replace 'nginx' with the actual name of your Nginx or App service in docker-compose
+    command: listen --forward-to http://nginx/api/webhooks/stripe
+    env_file:
+      - ./.env
+    environment:
+      # Stripe CLI looks for this specific variable name to authenticate
+      - STRIPE_API_KEY=${STRIPE_SECRET}
+    depends_on:
+      - web # Ensure the web server is up before Stripe tries to forward
+    
 networks:
   mercado-network:
     driver: bridge
