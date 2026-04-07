@@ -46,4 +46,45 @@ class Product extends Model
             'created_at'  => $this->created_at?->timestamp ?? 0,
         ];
     }
+
+    /**
+     * The explicit schema for Typesense.
+     */
+    public function typesenseCollectionSchema(): array
+    {
+        return [
+            'name'   => 'products', // This should match your table or scout index name
+            'fields' => [
+                ['name' => 'id', 'type' => 'string'],
+                ['name' => 'external_id', 'type' => 'string'],
+                ['name' => 'title', 'type' => 'string'],
+                ['name' => 'description', 'type' => 'string'],
+                ['name' => 'price', 'type' => 'float'],
+                ['name' => 'category', 'type' => 'string', 'facet' => true], // 'facet' allows filtering by category
+                ['name' => 'created_at', 'type' => 'int64'],
+            ],
+            'default_sorting_field' => 'created_at',
+        ];
+    }
+
+    /**
+     * A more robust way to specify search parameters for the driver.
+     */
+    public function typesenseSearchParameters(): array
+    {
+        return [
+            'query_by' => 'title,description,category',
+            'sort_by'  => 'created_at:desc',
+            'inplace_fields' => 'title,description', // Optimization for highlighting
+        ];
+    }
+
+    /**
+     * Ensure the collection name matches exactly what you defined 
+     * in typesenseCollectionSchema.
+     */
+    public function searchableAs(): string
+    {
+        return 'products';
+    }
 }
