@@ -5,6 +5,10 @@ use App\Http\Controllers\Payment\CheckoutController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OrderController;
+use App\Models\Order;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -16,9 +20,9 @@ Route::get('/', function () {
 });
 
 // The main B2B Merchant Dashboard
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 // Protected Merchant Actions
 Route::middleware('auth')->group(function () {
@@ -26,14 +30,30 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+
     // Merchant generates the Stripe Checkout Session
     Route::post('/checkout/{order}', CheckoutController::class)->name('checkout.initiate');
 });
 
 // Public Client Facing Routes (Where Stripe sends the buyer after payment)
-Route::get('/payment/success', function () {
-    // will create this minimal Vue component later
-    return Inertia::render('Checkout/Success');
+Route::get('/payment/success', function (Request $request) {
+    $sessionId = $request->query('session_id');
+
+    if (!$sessionId) {
+        return redirect()->route('dashboard')->with('error', 'No session ID provided.');
+    }
+
+    $order = Order::where('stripe_session_id', $sessionId)->first();
+
+    // If order is not found, redirect to dashboard with a warning
+    if (!$order) {
+        return redirect()->route('dashboard')->with('error', 'Transaction record not found.');
+    }
+
+    return Inertia::render('Checkout/Success', [
+        'order' => $order
+    ]);
 })->name('payment.success');
 
 Route::get('/payment/cancel', function () {

@@ -21,6 +21,7 @@ services:
         PUID: ${PUID:-1000}
         PGID: ${PGID:-1000}
     user: "${PUID:-1000}:${PGID:-1000}"
+    working_dir: /var/www/html
     volumes:
       - ./backend:/var/www/html:z
     env_file:
@@ -153,6 +154,8 @@ services:
       - STRIPE_API_KEY=${STRIPE_SECRET}
     depends_on:
       - web # Ensure the web server is up before Stripe tries to forward
+    networks:
+      - mercado-network
     
 networks:
   mercado-network:

@@ -43,10 +43,10 @@ class StripeService
             'metadata' => [
                 'order_id' => $order->id,
             ],
-            'success_url' => route('payment.success'),
-            'cancel_url' => route('payment.cancel'),
+            // ADD THE QUERY PARAMETER HERE:
+            'success_url' => route('payment.success', [], true) . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => route('payment.cancel', [], true),
         ]);
-
         // Save the session ID to the order for tracking
         $order->update(['stripe_session_id' => $session->id]);
 

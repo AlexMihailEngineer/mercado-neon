@@ -22,6 +22,7 @@
     },
     "dependencies": {
         "flowbite": "^4.0.1",
-        "flowbite-vue": "^0.2.2"
+        "flowbite-vue": "^0.2.2",
+        "lodash": "^4.18.1"
     }
 }
