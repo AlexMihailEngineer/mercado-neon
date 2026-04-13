@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "44912e1b6ca2728d1aa161463287e4af",
+    "content-hash": "ec43983a71330829e9dd92515afbf53c",
     "packages": [
         {
             "name": "brick/math",
@@ -3981,6 +3981,51 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.2"
             },
             "time": "2025-12-14T04:43:48+00:00"
+        },
+        {
+            "name": "shusaura85/fancourier-api",
+            "version": "v2.0.22",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/shusaura85/fancourier-api.git",
+                "reference": "ed313221891b823a2142a32062c5d2875caf7ac2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/shusaura85/fancourier-api/zipball/ed313221891b823a2142a32062c5d2875caf7ac2",
+                "reference": "ed313221891b823a2142a32062c5d2875caf7ac2",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "php": ">=7.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Fancourier\\": "src/Fancourier/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Shu Saura",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Library for FanCourier API v2.0",
+            "support": {
+                "issues": "https://github.com/shusaura85/fancourier-api/issues",
+                "source": "https://github.com/shusaura85/fancourier-api/tree/v2.0.22"
+            },
+            "time": "2026-03-26T10:37:12+00:00"
         },
         {
             "name": "stripe/stripe-php",

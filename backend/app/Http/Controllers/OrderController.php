@@ -12,11 +12,19 @@ class OrderController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Strict Validation
+        // 1. Strict Validation - Including new shipping requirements
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+
+            // New Logistics Fields
+            'customer_name'    => ['required', 'string', 'max:255'],
+            'customer_phone'   => ['required', 'string', 'regex:/^07[0-9]{8}$/'], // Strict RO mobile format
+            'customer_email'   => ['required', 'email', 'max:255'],
+            'shipping_county'  => ['required', 'string', 'max:100'],
+            'shipping_city'    => ['required', 'string', 'max:100'],
+            'shipping_address' => ['required', 'string', 'max:500'],
         ]);
 
         // 2. Zero-Trust Math (Recalculate total server-side)
@@ -41,7 +49,8 @@ class OrderController extends Controller
             $totalBani += ($priceBani * (int) $reqItem['quantity']);
         }
 
-        $totalRon = intdiv($totalBani, 100) . '.' . str_pad((string) ($totalBani % 100), 2, '0', STR_PAD_LEFT);
+        // Convert back to decimal for storage
+        $totalRon = $totalBani / 100;
 
         $order = null;
         $attempts = 0;
@@ -50,7 +59,7 @@ class OrderController extends Controller
             $attempts++;
 
             try {
-                $order = DB::transaction(function () use ($totalRon) {
+                $order = DB::transaction(function () use ($totalRon, $validated) {
                     // 3. Generate Sequential B2B Invoice Number
                     $lastOrder = Order::query()
                         ->select('id')
@@ -61,11 +70,19 @@ class OrderController extends Controller
                     $nextId = $lastOrder ? $lastOrder->id + 1 : 1;
                     $invoiceNumber = 'MN-2026-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
-                    // 4. Create the Order
+                    // 4. Create the Order with all required fields
                     return Order::create([
-                        'invoice_number' => $invoiceNumber,
-                        'total_amount_ron' => round($totalRon, 2),
-                        'status' => 'pending'
+                        'invoice_number'   => $invoiceNumber,
+                        'total_amount_ron' => $totalRon,
+                        'status'           => 'pending',
+
+                        // Passing the validated logistics data
+                        'customer_name'    => $validated['customer_name'],
+                        'customer_phone'   => $validated['customer_phone'],
+                        'customer_email'   => $validated['customer_email'],
+                        'shipping_county'  => $validated['shipping_county'],
+                        'shipping_city'    => $validated['shipping_city'],
+                        'shipping_address' => $validated['shipping_address'],
                     ]);
                 }, 3);
             } catch (QueryException $e) {
@@ -74,12 +91,9 @@ class OrderController extends Controller
         }
 
         if ($order === null) {
-            return back()->withErrors(['error' => 'Could not create order.']);
+            return back()->withErrors(['error' => 'Could not create order due to a database conflict.']);
         }
 
-        // Optional Day 5 task: we could save the items to an `order_items` pivot table here
-
-        // 5. Return to Dashboard (Inertia will see the new order in the pendingOrders prop)
         return back();
     }
 }

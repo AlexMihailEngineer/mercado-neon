@@ -4,7 +4,6 @@ import { Head, router } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
 import debounce from 'lodash/debounce';
 
-// 1. Accept data from DashboardController
 const props = defineProps({
     pendingOrders: { type: Array, default: () => [] },
     searchResults: { type: Array, default: () => [] },
@@ -12,10 +11,8 @@ const props = defineProps({
     systemStats: { type: Object, default: () => ({}) }
 });
 
-// 2. Initialize search with URL parameter (avoiding the '*' wildcard in the UI)
 const searchQuery = ref(props.filters.search && props.filters.search !== '*' ? props.filters.search : '');
 
-// 3. Debounced Search Logic
 const performSearch = debounce((value) => {
     router.get(
         route('dashboard'), 
@@ -28,7 +25,6 @@ watch(searchQuery, (newValue) => {
     performSearch(newValue);
 });
 
-// 4. Payment Link Trigger
 const generatePaymentLink = (orderId) => {
     router.post(route('checkout.initiate', orderId), {}, {
         preserveState: true,
@@ -36,12 +32,19 @@ const generatePaymentLink = (orderId) => {
     });
 };
 
-// 1. Draft Invoice State (The Cart)
 const draftInvoice = ref([]);
 
-// 2. Cart Actions
+// New: Reactive form state for mandatory logistics data
+const customerForm = ref({
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
+    shipping_county: '',
+    shipping_city: '',
+    shipping_address: '',
+});
+
 const addToInvoice = (product) => {
-    // Check if item already exists in the draft
     const existing = draftInvoice.value.find(item => item.id === product.id);
     if (existing) {
         existing.quantity++;
@@ -54,17 +57,16 @@ const removeFromInvoice = (productId) => {
     draftInvoice.value = draftInvoice.value.filter(item => item.id !== productId);
 };
 
-// 3. Reactive Math
 const invoiceTotal = computed(() => {
     return draftInvoice.value.reduce((total, item) => {
         return total + (parseFloat(item.price) * item.quantity);
-    }, 0).toFixed(2); // Keep it strictly 2 decimal places for RON
+    }, 0).toFixed(2);
 });
 
-// 4. Submit the Draft to Laravel
 const generateDraftInvoice = () => {
     router.post(route('orders.store'), {
-        // Only send what the backend needs: IDs and Quantities
+        // Spread the customer data into the request
+        ...customerForm.value,
         items: draftInvoice.value.map(item => ({ 
             id: item.id, 
             quantity: item.quantity 
@@ -72,7 +74,11 @@ const generateDraftInvoice = () => {
     }, {
         preserveState: true,
         preserveScroll: true,
-        onSuccess: () => draftInvoice.value = [] // Wipe the frontend draft on success
+        onSuccess: () => {
+            draftInvoice.value = [];
+            // Reset form on success
+            Object.keys(customerForm.value).forEach(key => customerForm.value[key] = '');
+        }
     });
 };
 </script>
@@ -154,32 +160,53 @@ const generateDraftInvoice = () => {
         </div>
 
         <div v-if="draftInvoice.length > 0" class="mb-10 p-6 bg-black/60 border border-neon-magenta/30 shadow-[0_0_15px_rgba(255,79,216,0.1)] rounded-sm">
-            <div class="flex justify-between items-end mb-4">
+            <div class="flex justify-between items-end mb-6">
                 <h3 class="text-neon-magenta font-mono text-xs tracking-[0.3em]">++ ACTIVE_INVOICE_DRAFT</h3>
                 <span class="text-white font-mono text-xl">{{ invoiceTotal }} <span class="text-xs text-neon-magenta">RON</span></span>
             </div>
             
-            <div class="space-y-2 mb-6">
-                <div v-for="item in draftInvoice" :key="item.id" class="flex items-center justify-between bg-black/40 border border-neon-magenta/20 p-3">
-                    <div class="flex flex-col">
-                        <span class="text-white text-sm font-bold">{{ item.title }}</span>
-                        <span class="text-[10px] text-neon-magenta/70 font-mono">{{ item.price }} RON x {{ item.quantity }}</span>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="space-y-2">
+                    <div class="text-[10px] text-neon-magenta/50 font-mono mb-2">ORD_MANIFEST_ITEMS</div>
+                    <div v-for="item in draftInvoice" :key="item.id" class="flex items-center justify-between bg-black/40 border border-neon-magenta/20 p-3">
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-bold">{{ item.title }}</span>
+                            <span class="text-[10px] text-neon-magenta/70 font-mono">{{ item.price }} RON x {{ item.quantity }}</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-neon-magenta font-mono font-bold">{{ (item.price * item.quantity).toFixed(2) }} RON</span>
+                            <button @click="removeFromInvoice(item.id)" class="text-red-500 hover:text-red-400 font-mono text-xs">
+                                [X]
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <span class="text-neon-magenta font-mono font-bold">{{ (item.price * item.quantity).toFixed(2) }} RON</span>
-                        <button @click="removeFromInvoice(item.id)" class="text-red-500 hover:text-red-400 font-mono text-xs">
-                            [X]
-                        </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="text-[10px] text-neon-magenta/50 font-mono mb-2">SHIPPING_METADATA_REQUIRED</div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <input v-model="customerForm.customer_name" type="text" placeholder="FULL_NAME" class="bg-black/40 border border-neon-magenta/30 text-white font-mono text-xs p-3 focus:ring-1 focus:ring-neon-magenta rounded-sm">
+                        <input v-model="customerForm.customer_phone" type="text" placeholder="PHONE (e.g. 07XXXXXXXX)" class="bg-black/40 border border-neon-magenta/30 text-white font-mono text-xs p-3 focus:ring-1 focus:ring-neon-magenta rounded-sm">
                     </div>
+
+                    <input v-model="customerForm.customer_email" type="email" placeholder="EMAIL_ADDRESS" class="w-full bg-black/40 border border-neon-magenta/30 text-white font-mono text-xs p-3 focus:ring-1 focus:ring-neon-magenta rounded-sm">
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <input v-model="customerForm.shipping_county" type="text" placeholder="COUNTY (Județ)" class="bg-black/40 border border-neon-magenta/30 text-white font-mono text-xs p-3 focus:ring-1 focus:ring-neon-magenta rounded-sm">
+                        <input v-model="customerForm.shipping_city" type="text" placeholder="CITY (Localitate)" class="bg-black/40 border border-neon-magenta/30 text-white font-mono text-xs p-3 focus:ring-1 focus:ring-neon-magenta rounded-sm">
+                    </div>
+
+                    <textarea v-model="customerForm.shipping_address" placeholder="STREET_ADDRESS_DETAILED" rows="2" class="w-full bg-black/40 border border-neon-magenta/30 text-white font-mono text-xs p-3 focus:ring-1 focus:ring-neon-magenta rounded-sm"></textarea>
                 </div>
             </div>
 
-            <div class="flex justify-end">
+            <div class="flex justify-end pt-4 border-t border-neon-magenta/20">
                 <button 
                     @click="generateDraftInvoice"
-                    class="px-6 py-3 bg-neon-magenta/20 hover:bg-neon-magenta/40 text-neon-magenta border border-neon-magenta transition-all duration-200 text-xs uppercase tracking-wider font-bold"
+                    class="px-8 py-4 bg-neon-magenta/20 hover:bg-neon-magenta/40 text-neon-magenta border border-neon-magenta transition-all duration-200 text-xs uppercase tracking-wider font-bold shadow-[0_0_15px_rgba(255,79,216,0.1)]"
                 >
-                    Generate Official Order
+                    Initialize Official Transaction
                 </button>
             </div>
         </div>

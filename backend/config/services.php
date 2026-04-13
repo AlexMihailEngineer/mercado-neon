@@ -40,4 +40,10 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'fancourier' => [
+        'client_id' => env('FANCOURIER_CLIENT_ID'),
+        'username'  => env('FANCOURIER_USERNAME'),
+        'password'  => env('FANCOURIER_PASSWORD'),
+    ],
+
 ];
