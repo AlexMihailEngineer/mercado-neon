@@ -4,7 +4,6 @@ namespace App\Events;
 
 use App\Models\Order;
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -28,7 +27,6 @@ class ShipmentStatusUpdated implements ShouldBroadcastNow
         // Broadcasting on a private channel secured to the user who owns the order
         return [
             new Channel('shipments'),
-            new PrivateChannel('orders.' . $this->order->user_id),
         ];
     }
 
@@ -39,8 +37,8 @@ class ShipmentStatusUpdated implements ShouldBroadcastNow
     {
         return [
             'order_id' => $this->order->id,
-            'sameday_awb' => $this->order->sameday_awb,
-            'status' => $this->order->status,
+            'awb_number' => $this->order->awb_number,
+            'status' => $this->order->logistics_status,
         ];
     }
 }

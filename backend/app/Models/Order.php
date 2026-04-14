@@ -13,6 +13,8 @@ class Order extends Model
         'invoice_number',
         'total_amount_ron',
         'status',
+        'payment_status',
+        'logistics_status',
         'stripe_session_id',
         'customer_name',
         'customer_phone',
@@ -20,7 +22,7 @@ class Order extends Model
         'shipping_county',
         'shipping_city',
         'shipping_address',
-        'sameday_awb',
+        'awb_number',
         'logistics_last_updated_at',
     ];
 
@@ -47,12 +49,9 @@ class Order extends Model
         return $eurCents / 100;
     }
 
-    /**
-     * Accessor for frontend HUD display - maps sameday_awb to awb_number.
-     */
     public function getAwbNumberAttribute(): ?string
     {
-        return $this->sameday_awb;
+        return $this->attributes['awb_number'] ?? null;
     }
 
     /**
@@ -60,6 +59,6 @@ class Order extends Model
      */
     public function getLogisticsStatusAttribute(): string
     {
-        return $this->status;
+        return (string) ($this->attributes['logistics_status'] ?? $this->status);
     }
 }

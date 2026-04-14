@@ -3,11 +3,12 @@
 namespace App\Listeners;
 
 use App\Events\PaymentConfirmed;
+use App\Events\ShipmentStatusUpdated;
 use App\Services\FanCourierService;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class GenerateFanCourierAWB implements ShouldQueue
 {
@@ -43,32 +44,29 @@ class GenerateFanCourierAWB implements ShouldQueue
         $order = $event->order;
 
         // Idempotency check: Don't generate a new AWB if one already exists
-        if (!empty($order->awb_number)) {
+        if (! empty($order->awb_number)) {
             Log::info("AWB_ALREADY_EXISTS: Order {$order->id} already has AWB {$order->awb_number}");
+
             return;
         }
 
-        try {
-            // Call the service we built previously
-            $awbNumber = $this->fanCourier->generateAwb($order);
+        $awbNumber = $this->fanCourier->generateAwb($order);
 
-            // Persist the AWB to the database
-            $order->update([
-                'sameday_awb' => $awbNumber,
-                'status' => 'awb_generated',
-            ]);
+        $order->update([
+            'awb_number' => $awbNumber,
+            'logistics_status' => 'awb_generated',
+            'status' => 'awb_generated',
+        ]);
 
-            // Dispatch the same event to wake up the frontend!
-            \App\Events\ShipmentStatusUpdated::dispatch($order);
+        $order->refresh();
 
-            Log::info("ORDER_PROCESSED: AWB {$awbNumber} successfully attached to Order {$order->id}");
-        } catch (Exception $e) {
-            // Log the failure
-            Log::error("LISTENER_FAN_COURIER_FAIL: Failed to generate AWB for Order {$order->id}. Error: " . $e->getMessage());
-
-            // Release the job back onto the queue with a delay (triggers the backoff array)
-            $this->release($this->backoff[$this->attempts() - 1] ?? 300);
+        if (empty($order->awb_number)) {
+            throw new Exception("AWB persistence failed for order {$order->id}.");
         }
+
+        ShipmentStatusUpdated::dispatch($order);
+
+        Log::info("ORDER_PROCESSED: AWB {$awbNumber} successfully attached to Order {$order->id}");
     }
 
     /**

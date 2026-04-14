@@ -50,7 +50,7 @@ const props = defineProps({
                         <p class="text-[10px] text-neon-cyan/70 font-mono text-left leading-relaxed">
                             > LOG: Payment signals received from STRIPE_GLOBAL...<br>
                             > LOG: Database updated for MN-{{ order.id }}...<br>
-                            > LOG: Initializing Day 5 protocols (SAMEDAY_AWB)...
+                            > LOG: Initializing Day 5 protocols (AWB_NUMBER)...
                         </p>
                     </div>
 

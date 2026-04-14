@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use Stripe\StripeClient;
 use App\Models\Order;
+use Stripe\StripeClient;
 
 class StripeService
 {
@@ -44,11 +44,15 @@ class StripeService
                 'order_id' => $order->id,
             ],
             // ADD THE QUERY PARAMETER HERE:
-            'success_url' => route('payment.success', [], true) . '?session_id={CHECKOUT_SESSION_ID}',
+            'success_url' => route('payment.success', [], true).'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('payment.cancel', [], true),
         ]);
         // Save the session ID to the order for tracking
-        $order->update(['stripe_session_id' => $session->id]);
+        $order->update([
+            'stripe_session_id' => $session->id,
+            'payment_status' => 'pending',
+            'status' => 'pending',
+        ]);
 
         return $session->url;
     }

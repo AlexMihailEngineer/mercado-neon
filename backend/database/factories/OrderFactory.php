@@ -20,14 +20,17 @@ class OrderFactory extends Factory
         $loc = $this->faker->randomElement($locations);
 
         return [
-            'invoice_number'   => 'MN-2026-' . $this->faker->unique()->numberBetween(100, 999),
+            'invoice_number' => 'MN-2026-'.$this->faker->unique()->numberBetween(100, 999),
             'total_amount_ron' => $this->faker->randomFloat(2, 100, 1000),
-            'status'           => 'pending',
-            'customer_name'    => $this->faker->name(),
-            'customer_phone'   => '07' . $this->faker->randomNumber(8, true),
-            'customer_email'   => $this->faker->safeEmail(),
-            'shipping_county'  => $loc['county'],
-            'shipping_city'    => $loc['city'],
+            'status' => 'pending',
+            'payment_status' => 'pending',
+            'logistics_status' => null,
+            'awb_number' => null,
+            'customer_name' => $this->faker->name(),
+            'customer_phone' => '07'.$this->faker->randomNumber(8, true),
+            'customer_email' => $this->faker->safeEmail(),
+            'shipping_county' => $loc['county'],
+            'shipping_city' => $loc['city'],
             'shipping_address' => $this->faker->streetAddress(),
         ];
     }

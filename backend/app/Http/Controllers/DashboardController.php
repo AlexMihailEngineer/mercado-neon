@@ -21,14 +21,16 @@ class DashboardController extends Controller
         $search = empty($query) ? '*' : $query;
 
         return Inertia::render('Dashboard', [
-            'pendingOrders' => Order::where('status', 'pending')
+            'pendingOrders' => Order::where('payment_status', 'pending')
                 ->latest()
                 ->take(10)
                 ->get(),
 
             // NEW: Active Shipments for the FAN Courier HUD
-            'activeShipments' => Order::whereNotNull('sameday_awb')
-                ->whereIn('status', ['paid', 'awb_generated', 'shipped']) // <-- UPDATED LINE
+            'activeShipments' => Order::query()
+                ->whereNotNull('awb_number')
+                ->where('payment_status', 'paid')
+                ->whereIn('logistics_status', ['awb_generated', 'shipped', 'in_transit', 'out_for_delivery'])
                 ->latest()
                 ->get(),
 
@@ -43,7 +45,9 @@ class DashboardController extends Controller
 
             'systemStats' => [
                 // Dynamic count of generated AWBs
-                'active_awbs' => Order::whereNotNull('sameday_awb')->count(),
+                'active_awbs' => Order::query()
+                    ->whereNotNull('awb_number')
+                    ->count(),
                 'match_accuracy' => 98.2,
                 'is_anaf_synced' => true,
             ],

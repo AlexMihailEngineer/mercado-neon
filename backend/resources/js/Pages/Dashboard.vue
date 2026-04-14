@@ -13,7 +13,6 @@ const props = defineProps({
 });
 
 const page = usePage();
-const userId = computed(() => page.props.auth.user.id);
 
 // Make shipments reactive so Echo can update them in real-time
 const activeLogistics = ref(props.activeShipments);
@@ -114,7 +113,7 @@ onMounted(() => {
                     } else {
                         // Update fields directly to trigger Vue reactivity
                         activeLogistics.value[index].logistics_status = e.status;
-                        activeLogistics.value[index].awb_number = e.sameday_awb;
+                        activeLogistics.value[index].awb_number = e.awb_number;
                     }
                 } else {
                     // If the order isn't in our array yet (e.g., just paid), reload the data block silently
@@ -325,7 +324,7 @@ onUnmounted(() => {
                             <td class="p-4">{{ order.total_amount_ron }}</td>
                             <td class="p-4">
                                 <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-[10px] rounded border border-yellow-500/30">
-                                    {{ order.status.toUpperCase() }}
+                                    {{ (order.payment_status || order.status).toUpperCase() }}
                                 </span>
                             </td>
                             <td class="p-4 text-right">

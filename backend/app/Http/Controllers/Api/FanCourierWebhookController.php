@@ -39,7 +39,7 @@ class FanCourierWebhookController extends Controller
         }
 
         // 3. Locate the Local Entity
-        $order = Order::where('sameday_awb', $awbNumber)->first();
+        $order = Order::query()->where('awb_number', $awbNumber)->first();
 
         if (! $order) {
             // Return 200 even if not found to prevent the provider from endlessly retrying a dead payload
@@ -50,6 +50,7 @@ class FanCourierWebhookController extends Controller
 
         // 4. Mutate State
         $order->update([
+            'logistics_status' => $currentStatus,
             'status' => $currentStatus,
             'logistics_last_updated_at' => $eventTimestamp,
         ]);

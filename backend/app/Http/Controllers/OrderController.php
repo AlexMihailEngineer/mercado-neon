@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\QueryException;
 
 class OrderController extends Controller
 {
@@ -19,11 +19,11 @@ class OrderController extends Controller
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
 
             // New Logistics Fields
-            'customer_name'    => ['required', 'string', 'max:255'],
-            'customer_phone'   => ['required', 'string', 'regex:/^07[0-9]{8}$/'], // Strict RO mobile format
-            'customer_email'   => ['required', 'email', 'max:255'],
-            'shipping_county'  => ['required', 'string', 'max:100'],
-            'shipping_city'    => ['required', 'string', 'max:100'],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_phone' => ['required', 'string', 'regex:/^07[0-9]{8}$/'], // Strict RO mobile format
+            'customer_email' => ['required', 'email', 'max:255'],
+            'shipping_county' => ['required', 'string', 'max:100'],
+            'shipping_city' => ['required', 'string', 'max:100'],
             'shipping_address' => ['required', 'string', 'max:500'],
         ]);
 
@@ -39,7 +39,7 @@ class OrderController extends Controller
         };
 
         $totalBani = 0;
-        $productIds = array_map(static fn(array $item): int => (int) $item['id'], $validated['items']);
+        $productIds = array_map(static fn (array $item): int => (int) $item['id'], $validated['items']);
         $pricesById = Product::query()
             ->whereIn('id', $productIds)
             ->pluck('price', 'id');
@@ -68,20 +68,22 @@ class OrderController extends Controller
                         ->first();
 
                     $nextId = $lastOrder ? $lastOrder->id + 1 : 1;
-                    $invoiceNumber = 'MN-2026-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+                    $invoiceNumber = 'MN-2026-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
                     // 4. Create the Order with all required fields
                     return Order::create([
-                        'invoice_number'   => $invoiceNumber,
+                        'invoice_number' => $invoiceNumber,
                         'total_amount_ron' => $totalRon,
-                        'status'           => 'pending',
+                        'status' => 'pending',
+                        'payment_status' => 'pending',
+                        'logistics_status' => null,
 
                         // Passing the validated logistics data
-                        'customer_name'    => $validated['customer_name'],
-                        'customer_phone'   => $validated['customer_phone'],
-                        'customer_email'   => $validated['customer_email'],
-                        'shipping_county'  => $validated['shipping_county'],
-                        'shipping_city'    => $validated['shipping_city'],
+                        'customer_name' => $validated['customer_name'],
+                        'customer_phone' => $validated['customer_phone'],
+                        'customer_email' => $validated['customer_email'],
+                        'shipping_county' => $validated['shipping_county'],
+                        'shipping_city' => $validated['shipping_city'],
                         'shipping_address' => $validated['shipping_address'],
                     ]);
                 }, 3);

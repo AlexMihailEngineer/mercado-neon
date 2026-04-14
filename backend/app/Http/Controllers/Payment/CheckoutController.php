@@ -16,7 +16,7 @@ class CheckoutController extends Controller
     public function __invoke(Order $order, StripeService $stripeService)
     {
         // 1. State Validation: Prevent generating links for already paid orders
-        if ($order->status === 'paid') {
+        if ($order->payment_status === 'paid') {
             return back()->with('error', 'SYSTEM_ERR: Invoice already marked as PAID.');
         }
 
