@@ -26,6 +26,12 @@ class DashboardController extends Controller
                 ->take(10)
                 ->get(),
 
+            // NEW: Active Shipments for the FAN Courier HUD
+            'activeShipments' => Order::whereNotNull('sameday_awb')
+                ->whereIn('status', ['paid', 'awb_generated', 'shipped']) // <-- UPDATED LINE
+                ->latest()
+                ->get(),
+
             // Scout + Typesense call
             'searchResults' => Product::search($search)
                 ->take(8)
@@ -36,10 +42,11 @@ class DashboardController extends Controller
             ],
 
             'systemStats' => [
-                'active_awbs' => 12,
+                // Dynamic count of generated AWBs
+                'active_awbs' => Order::whereNotNull('sameday_awb')->count(),
                 'match_accuracy' => 98.2,
                 'is_anaf_synced' => true,
-            ]
+            ],
         ]);
     }
 }

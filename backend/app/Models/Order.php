@@ -21,12 +21,14 @@ class Order extends Model
         'shipping_city',
         'shipping_address',
         'sameday_awb',
-        'status'
+        'logistics_last_updated_at',
     ];
 
     protected $casts = [
         'total_amount_ron' => 'decimal:2',
     ];
+
+    protected $appends = ['awb_number', 'logistics_status'];
 
     /**
      * Helper to get EUR value for Stripe.
@@ -43,5 +45,21 @@ class Order extends Model
         }
 
         return $eurCents / 100;
+    }
+
+    /**
+     * Accessor for frontend HUD display - maps sameday_awb to awb_number.
+     */
+    public function getAwbNumberAttribute(): ?string
+    {
+        return $this->sameday_awb;
+    }
+
+    /**
+     * Accessor for frontend HUD display - maps status to logistics_status.
+     */
+    public function getLogisticsStatusAttribute(): string
+    {
+        return $this->status;
     }
 }

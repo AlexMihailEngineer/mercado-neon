@@ -58,6 +58,9 @@ class GenerateFanCourierAWB implements ShouldQueue
                 'status' => 'awb_generated',
             ]);
 
+            // Dispatch the same event to wake up the frontend!
+            \App\Events\ShipmentStatusUpdated::dispatch($order);
+
             Log::info("ORDER_PROCESSED: AWB {$awbNumber} successfully attached to Order {$order->id}");
         } catch (Exception $e) {
             // Log the failure

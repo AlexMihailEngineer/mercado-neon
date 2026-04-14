@@ -1,15 +1,22 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
-import { ref, watch, computed } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import debounce from 'lodash/debounce';
 
 const props = defineProps({
     pendingOrders: { type: Array, default: () => [] },
+    activeShipments: { type: Array, default: () => [] }, // NEW: Pass shipments from controller
     searchResults: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({ search: '' }) },
     systemStats: { type: Object, default: () => ({}) }
 });
+
+const page = usePage();
+const userId = computed(() => page.props.auth.user.id);
+
+// Make shipments reactive so Echo can update them in real-time
+const activeLogistics = ref(props.activeShipments);
 
 const searchQuery = ref(props.filters.search && props.filters.search !== '*' ? props.filters.search : '');
 
@@ -34,7 +41,6 @@ const generatePaymentLink = (orderId) => {
 
 const draftInvoice = ref([]);
 
-// New: Reactive form state for mandatory logistics data
 const customerForm = ref({
     customer_name: '',
     customer_phone: '',
@@ -65,7 +71,6 @@ const invoiceTotal = computed(() => {
 
 const generateDraftInvoice = () => {
     router.post(route('orders.store'), {
-        // Spread the customer data into the request
         ...customerForm.value,
         items: draftInvoice.value.map(item => ({ 
             id: item.id, 
@@ -76,11 +81,54 @@ const generateDraftInvoice = () => {
         preserveScroll: true,
         onSuccess: () => {
             draftInvoice.value = [];
-            // Reset form on success
             Object.keys(customerForm.value).forEach(key => customerForm.value[key] = '');
         }
     });
 };
+
+// HUD Styling helper for statuses
+const getStatusTheme = (status) => {
+    const themes = {
+        'pending': 'text-neon-cyan border-neon-cyan/30 bg-neon-cyan/10 shadow-[0_0_8px_rgba(46,249,182,0.2)]',
+        'in_transit': 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10 shadow-[0_0_8px_rgba(250,204,21,0.2)]',
+        'out_for_delivery': 'text-neon-purple border-neon-purple/30 bg-neon-purple/10 shadow-[0_0_8px_rgba(168,85,247,0.2)]',
+        'delivered': 'text-neon-pink border-neon-pink/30 bg-neon-pink/10 shadow-[0_0_8px_rgba(255,79,216,0.2)]',
+    };
+    return themes[status?.toLowerCase()] || 'text-gray-400 border-gray-400/30 bg-gray-400/10';
+};
+
+// Initialize Laravel Echo Listeners
+onMounted(() => {
+    if (window.Echo) {
+        window.Echo.channel('shipments')
+            .listen('ShipmentStatusUpdated', (e) => {
+                console.log('Echo Uplink Received:', e);
+
+                // Find the shipment in our reactive array
+                const index = activeLogistics.value.findIndex(s => s.id === e.order_id);
+
+                if (index !== -1) {
+                    // If delivered, remove from active logistics list
+                    if (e.status?.toLowerCase() === 'delivered') {
+                        activeLogistics.value.splice(index, 1);
+                    } else {
+                        // Update fields directly to trigger Vue reactivity
+                        activeLogistics.value[index].logistics_status = e.status;
+                        activeLogistics.value[index].awb_number = e.sameday_awb;
+                    }
+                } else {
+                    // If the order isn't in our array yet (e.g., just paid), reload the data block silently
+                    router.reload({ only: ['activeShipments', 'pendingOrders'] });
+                }
+            });
+    }
+});
+
+onUnmounted(() => {
+    if (window.Echo) {
+        window.Echo.leave('shipments');
+    }
+});
 </script>
 
 <template>
@@ -109,7 +157,7 @@ const generateDraftInvoice = () => {
             </div>
         </div>
 
-        <div v-if="searchResults.length > 0" class="mb-10">
+                <div v-if="searchResults.length > 0" class="mb-10">
             <h3 class="text-neon-cyan font-mono text-xs tracking-[0.3em] mb-4 flex items-center">
                 <span class="w-2 h-2 bg-neon-cyan mr-2 shadow-[0_0_8px_#2EF9B6]"></span>
                 LIVE_ASSETS_DETECTED
@@ -211,12 +259,51 @@ const generateDraftInvoice = () => {
             </div>
         </div>
 
-        <div>
+        <div v-if="activeLogistics.length > 0" class="mb-10">
+            <div class="flex justify-between items-end mb-4 border-b border-white/10 pb-2">
+                <h3 class="text-neon-cyan font-mono text-xs tracking-[0.3em] flex items-center">
+                    <span class="w-2 h-2 bg-neon-cyan mr-2 animate-ping shadow-[0_0_8px_#2EF9B6]"></span>
+                    ACTIVE_LOGISTICS_UPLINK // FAN_COURIER
+                </h3>
+                <span class="text-[10px] font-mono text-neon-cyan/50 animate-pulse">LISTENING_FOR_WEBHOOKS...</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div 
+                    v-for="shipment in activeLogistics" 
+                    :key="shipment.id" 
+                    class="p-4 bg-black/40 border border-white/10 rounded-sm flex flex-col justify-between group transition-all duration-300 hover:border-white/30"
+                >
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="text-[10px] text-gray-500 font-mono mb-1">AWB_NUMBER</div>
+                            <h4 class="text-white text-sm font-bold font-mono tracking-wider">{{ shipment.awb_number || 'PENDING_GENERATION' }}</h4>
+                        </div>
+                        <div 
+                            class="px-2 py-1 text-[10px] font-mono uppercase tracking-wider border rounded-sm transition-colors duration-500"
+                            :class="getStatusTheme(shipment.logistics_status)"
+                        >
+                            {{ shipment.logistics_status?.replace('_', ' ') || 'PROCESSING' }}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-end justify-between border-t border-white/5 pt-3">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-gray-500 font-mono">DESTINATION</span>
+                            <span class="text-xs text-gray-300 truncate max-w-[150px]">{{ shipment.shipping_city }}, {{ shipment.shipping_county }}</span>
+                        </div>
+                        <span class="text-white font-mono text-xs">INV: {{ shipment.invoice_number }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="pendingOrders.length > 0" class="mb-10">
             <h3 class="text-neon-purple font-mono text-xs tracking-[0.3em] mb-4 flex items-center">
                 <span class="w-2 h-2 bg-neon-purple rounded-full mr-2 animate-pulse"></span>
                 AWAITING_PAYMENT_INITIATION
             </h3>
-            
+
             <div class="bg-black/40 border border-neon-purple/20 rounded-sm overflow-hidden">
                 <table class="w-full text-left font-mono text-sm">
                     <thead class="bg-neon-purple/10 text-neon-purple/70 text-xs">
