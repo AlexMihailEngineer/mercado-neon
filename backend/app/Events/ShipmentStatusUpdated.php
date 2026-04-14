@@ -30,6 +30,11 @@ class ShipmentStatusUpdated implements ShouldBroadcastNow
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'ShipmentStatusUpdated';
+    }
+
     /**
      * The data to broadcast to the UI.
      */

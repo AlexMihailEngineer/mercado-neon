@@ -6,6 +6,7 @@ use App\Events\ShipmentStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class FanCourierWebhookController extends Controller
@@ -30,7 +31,8 @@ class FanCourierWebhookController extends Controller
         // Note: Map these keys precisely to the FAN Courier API documentation
         $awbNumber = $request->input('awb');
         $currentStatus = $request->input('status'); // e.g., 'in_transit', 'delivered'
-        $eventTimestamp = $request->input('timestamp', now());
+        $eventTimestampRaw = $request->input('timestamp');
+        $eventTimestamp = $this->normalizeTimestamp($eventTimestampRaw);
 
         if (! $awbNumber || ! $currentStatus) {
             Log::error('FAN Courier Webhook: Missing critical payload data.', $request->all());
@@ -51,7 +53,6 @@ class FanCourierWebhookController extends Controller
         // 4. Mutate State
         $order->update([
             'logistics_status' => $currentStatus,
-            'status' => $currentStatus,
             'logistics_last_updated_at' => $eventTimestamp,
         ]);
 
@@ -85,5 +86,27 @@ class FanCourierWebhookController extends Controller
         ];
 
         return in_array($request->ip(), $allowedIps);
+    }
+
+    private function normalizeTimestamp(mixed $timestamp): Carbon
+    {
+        if ($timestamp === null || $timestamp === '') {
+            return now();
+        }
+
+        try {
+            if (is_int($timestamp) || (is_string($timestamp) && ctype_digit($timestamp))) {
+                return Carbon::createFromTimestamp((int) $timestamp, config('app.timezone'));
+            }
+
+            return Carbon::parse($timestamp, config('app.timezone'));
+        } catch (\Throwable $e) {
+            Log::warning('FAN Courier Webhook: Invalid timestamp received, defaulting to now().', [
+                'timestamp' => $timestamp,
+                'error' => $e->getMessage(),
+            ]);
+
+            return now();
+        }
     }
 }

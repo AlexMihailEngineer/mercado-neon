@@ -30,8 +30,6 @@ class Order extends Model
         'total_amount_ron' => 'decimal:2',
     ];
 
-    protected $appends = ['awb_number', 'logistics_status'];
-
     /**
      * Helper to get EUR value for Stripe.
      * Calculated using the 1:5 ratio with round-half-up logic.
