@@ -100,7 +100,7 @@ const getStatusTheme = (status) => {
 onMounted(() => {
     if (window.Echo) {
         window.Echo.channel('shipments')
-            .listen('ShipmentStatusUpdated', (e) => {
+            .listen('.ShipmentStatusUpdated', (e) => {
                 console.log('Echo Uplink Received:', e);
 
                 // Find the shipment in our reactive array
